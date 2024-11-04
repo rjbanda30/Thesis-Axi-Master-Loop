@@ -5,7 +5,7 @@
 #include "FixedPoint.h" // Fixed-point definitions
 
 // Function to arrange vertices with fixed-point types
-void arrangeVertices(
+void Arrange_Vertices(
      fixed_t in_array[][3],
      int indices[],
      fixed_t Ordered_X[],
@@ -69,7 +69,7 @@ int main() {
     fixed_t Ordered_X[Num_Rows], Ordered_Y[Num_Rows], Ordered_Z[Num_Rows];
 
     // Arrange vertices based on indices
-    arrangeVertices(in_array, indices, Ordered_X, Ordered_Y, Ordered_Z, Num_Indices);
+    Arrange_Vertices(in_array, indices, Ordered_X, Ordered_Y, Ordered_Z, Num_Indices);
 
 
     fixed_t Best_Score_HLS = double_to_fixed(0.0);
