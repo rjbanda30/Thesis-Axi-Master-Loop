@@ -10,12 +10,11 @@
 extern "C" {
 void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
          int Num_Rows, int Angle_Steps, fixed_t *Best_Score, fixed_t *Best_X, fixed_t *Best_Y) {
-	#pragma HLS ARRAY_PARTITION dim=1 type=complete variable=Ordered_Z
-	#pragma HLS ARRAY_PARTITION dim=1 type=complete variable=Ordered_Y
-	#pragma HLS ARRAY_PARTITION dim=1 type=complete variable=Ordered_X
 
 
-
+	#pragma HLS ARRAY_PARTITION dim=1 factor=3 type=cyclic variable=Ordered_X
+	#pragma HLS ARRAY_PARTITION dim=1 factor=3 type=cyclic variable=Ordered_Y
+	#pragma HLS ARRAY_PARTITION dim=1 factor=3 type=cyclic variable=Ordered_Z
 
 
     #pragma HLS INTERFACE mode=m_axi depth=1 port=Ordered_X
@@ -48,6 +47,7 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
 
     Input_Loop:
     for (int i = 0; i < Count_0; i++) {
+		#pragma HLS LOOP_TRIPCOUNT min=1 avg=100 max=200
         #pragma HLS PIPELINE II=4
 
         // Assists in reducing the number of times In_2D_Array needs to be accessed
@@ -160,6 +160,89 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
         Rot_Matrix_Z[d_idx + 2] = cos_X_cos_Y;
     }
 
+// 		Maybe next Architecture add LUT for the cosine and sin computations?
+//    // Creating X and Y arrays
+//    fixed_t sin_X_values[Angle_Index];
+//	#pragma HLS BIND_OP variable=sin_X_values op=mul impl=dsp
+//	#pragma HLS BIND_OP variable=sin_X_values op=add impl=dsp
+//	#pragma HLS BIND_OP variable=sin_X_values op=sub impl=dsp
+//	fixed_t cos_X_values[Angle_Index];
+//	#pragma HLS BIND_OP variable=cos_X_values op=mul impl=dsp
+//	#pragma HLS BIND_OP variable=cos_X_values op=add impl=dsp
+//	#pragma HLS BIND_OP variable=cos_X_values op=sub impl=dsp
+//    fixed_t sin_Y_values[Angle_Index];
+//    fixed_t cos_Y_values[Angle_Index];
+//
+//    Precompute_X_Angle_Loop:
+//    for (int j = 0; j < Count_2; j++) {
+//		#pragma HLS PIPELINE II=5
+//		#pragma HLS LOOP_TRIPCOUNT min=1 max=50
+//        sin_X_values[j] = hls::sin(X_Rotation_Angle[j]);
+//        cos_X_values[j] = hls::cos(X_Rotation_Angle[j]);
+//    }
+//    Precompute_Y_Angle_Loop:
+//    for (int i = 0; i < Count_3; i++) {
+//		#pragma HLS PIPELINE II=5
+//    	#pragma HLS LOOP_TRIPCOUNT min=1 max=50
+//        sin_Y_values[i] = hls::sin(Y_Rotation_Angle[i]);
+//        cos_Y_values[i] = hls::cos(Y_Rotation_Angle[i]);
+//    }
+//
+//    Rot_Matrix_Man_Flattened_Loop:
+//    for (int idx = 0; idx < Count_2 * Count_3; idx++) {
+//        #pragma HLS PIPELINE II=2
+//        #pragma HLS LOOP_TRIPCOUNT min=1 max=2500
+//
+//        int j = idx / Count_3;
+//        int i = idx % Count_3;
+//
+//        Element_X[X_Y_Index] = X_Rotation_Angle[j];
+//        Element_Y[X_Y_Index] = Y_Rotation_Angle[i];
+//        X_Y_Index++;
+//
+//        fixed_t cos_X = cos_X_values[j];
+//        fixed_t cos_Y = cos_Y_values[i];
+//        fixed_t sin_X = sin_X_values[j];
+//        fixed_t sin_Y = sin_Y_values[i];
+//
+//        fixed_t neg_sin_Y = -sin_Y;
+//        fixed_t neg_sin_X = -sin_X;
+//
+//        fixed_t sin_X_sin_Y = sin_X * sin_Y;
+//        fixed_t cos_X_sin_Y = cos_X * sin_Y;
+//        fixed_t cos_Y_sin_X = cos_Y * sin_X;
+//        fixed_t cos_X_cos_Y = cos_X * cos_Y;
+//
+//        // Assign values to Rot_Matrix with bounds check
+//        int d_idx = 3 * idx;
+//        if (d_idx + 2 >= Max_Rot_Index) {
+//    #ifndef __SYNTHESIS__
+//            std::cout << "Rotation matrix index out of bounds: " << d_idx + 2 << std::endl;
+//    #endif
+//            continue;
+//        }
+//
+//        // Apply DSP cores to multiplications
+////        #pragma HLS RESOURCE variable=sin_X_sin_Y core=DSP
+////        #pragma HLS RESOURCE variable=cos_X_sin_Y core=DSP
+////        #pragma HLS RESOURCE variable=cos_Y_sin_X core=DSP
+////        #pragma HLS RESOURCE variable=cos_X_cos_Y core=DSP
+//
+//        Rot_Matrix_X[d_idx] = cos_Y;
+//        Rot_Matrix_Y[d_idx] = sin_X_sin_Y;
+//        Rot_Matrix_Z[d_idx] = cos_X_sin_Y;
+//
+//        Rot_Matrix_X[d_idx + 1] = 0;
+//        Rot_Matrix_Y[d_idx + 1] = cos_X;
+//        Rot_Matrix_Z[d_idx + 1] = neg_sin_X;
+//
+//        Rot_Matrix_X[d_idx + 2] = neg_sin_Y;
+//        Rot_Matrix_Y[d_idx + 2] = cos_Y_sin_X;
+//        Rot_Matrix_Z[d_idx + 2] = cos_X_cos_Y;
+//    }
+//
+
+
     //***************************************
     // Initialize Best_Score Before Score_Loop
     //***************************************
@@ -215,6 +298,7 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
 
         Rotate_Points_Loop:
         for(int i = 0; i < In_1D_Limit; i++){
+#pragma HLS LOOP_TRIPCOUNT avg=150 max=300 min=1
             #pragma HLS PIPELINE II=3
 
             Rotated_X_0 = Rot_Matrix_X[Rot_M_Indx] * Out_1D_Array_X[(3*i)]   + Rot_Matrix_Y[Rot_M_Indx] * Out_1D_Array_Y[(3*i)]   + Rot_Matrix_Z[Rot_M_Indx] * Out_1D_Array_Z[(3*i)];
@@ -267,7 +351,7 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
 
         Compute_V_Loop:
         for(int j = 0;j<Count_6; j++){
-            #pragma HLS PIPELINE II=1
+            #pragma HLS PIPELINE II=4
 
             // This is V = Point 2 - Point 0
             Comp_V_0[j] = Rotated_X_Points_2[j] - Rotated_X_Points_0[j];
@@ -290,7 +374,7 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
 
         U_Cross_V_Loop:
         for(int i = 0; i < Count_7 ; i++){
-            #pragma HLS PIPELINE II=1
+            #pragma HLS PIPELINE II=4
 
             // Computes cross product components
             Temp_X = (Comp_U_1[i] * Comp_V_2[i]) - (Comp_U_2[i] * Comp_V_1[i]);
@@ -307,18 +391,24 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
         //***************************************
 
         fixed_t Cross_Magnitude_Array_0[Max_Cross_Mag];
-
+        fixed_t X_Mul;
+        fixed_t Y_Mul;
+        fixed_t Z_Mul;
+        fixed_t Sum_Mul;
         const int Count_8 = Num_Faces;
 
         Cross_Magnitude_Loop:
         for(int i = 0;i<Count_8; i++)
         {
-            #pragma HLS PIPELINE II=1
+
+            #pragma HLS PIPELINE II=4
 
 
-            Cross_Magnitude_Array_0[i] = hls::sqrt( (U_Cross_V_X[i] * U_Cross_V_X[i]) +
-                                                  (U_Cross_V_Y[i] * U_Cross_V_Y[i]) +
-                                                  (U_Cross_V_Z[i] * U_Cross_V_Z[i]) );
+        	X_Mul = U_Cross_V_X[i] * U_Cross_V_X[i];
+        	Y_Mul = U_Cross_V_Y[i] * U_Cross_V_Y[i];
+        	Z_Mul = U_Cross_V_Z[i] * U_Cross_V_Z[i];
+        	Sum_Mul = X_Mul+Y_Mul+Z_Mul;
+            Cross_Magnitude_Array_0[i] = hls::sqrt(Sum_Mul);
         }
 
         //***************************************
@@ -336,13 +426,18 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
 
         for(int i = 0;i<Count_9; i++)
         {
-            #pragma HLS PIPELINE II=1
+            #pragma HLS PIPELINE II=4
              if (Cross_Magnitude_Array_0[i] != 0) {
 
-                U_V_Cross_Norm_Array_0[i] = U_Cross_V_X[i] / Cross_Magnitude_Array_0[i];
-                U_V_Cross_Norm_Array_1[i] = U_Cross_V_Y[i] / Cross_Magnitude_Array_0[i];
-                U_V_Cross_Norm_Array_2[i] = U_Cross_V_Z[i] / Cross_Magnitude_Array_0[i];
+            	 float Multiple = Cross_Magnitude_Array_0[i];
+            	 float Reciprocal_float = 1.0f / Multiple;
+				// Cast back to fixed-point
+				fixed_t Reciprocal = (fixed_t)Reciprocal_float;
 
+				U_V_Cross_Norm_Array_0[i] = U_Cross_V_X[i]*Reciprocal;
+				U_V_Cross_Norm_Array_1[i] = U_Cross_V_Y[i]*Reciprocal;
+				U_V_Cross_Norm_Array_2[i] = U_Cross_V_Z[i]*Reciprocal;
+//				std::cout<<"Array 0: "<< Cross_Magnitude_Array_0[i]<<std::endl;
              }
              else {
 
@@ -374,7 +469,7 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
         Cross_Area_Loop:
 
         for(int i = 0;i<Count_10; i++){
-            #pragma HLS PIPELINE II=1
+            #pragma HLS PIPELINE II=4
 
 
             Cross_Area_Out_0[i] = fixed_t(0.5) * Cross_Magnitude_Array_0[i];
@@ -395,7 +490,7 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
 
         for(int i = 0;i<Count_11; i++)
         {
-            #pragma HLS PIPELINE II=1
+            #pragma HLS PIPELINE II=4
 
             // Compute dot products with unit vectors
             fixed_t dot_X = (U_V_Cross_Norm_Array_0[i] * Unit_X[0]) +
@@ -444,6 +539,7 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
         Position_Score_Loop:
         for(int i = 0; i < Count_12; i++, k++)
         {
+#pragma HLS LOOP_TRIPCOUNT avg=900 max=2500 min=1
             #pragma HLS PIPELINE II=7
 
             Temp_Score = Temp_Score + Point_Score_Out_0[k];
@@ -486,6 +582,7 @@ void Top(fixed_t Ordered_X[], fixed_t Ordered_Y[], fixed_t Ordered_Z[],
     Best_Score_Loop:
     for (int i = 0; i < Best_Elem_Loop; i++)
     {
+#pragma HLS LOOP_TRIPCOUNT avg=900 max=2500 min=1
         if (i == Best_Score_Element_Out)
         {
             *Best_X = Element_X[i];
