@@ -99,7 +99,7 @@ int main() {
     double Best_X_SW_d = fixed_to_double(Best_X_SW);
     double Best_Y_SW_d = fixed_to_double(Best_Y_SW);
 
-    if(6.283 < abs(Best_Score_HLS_d) < 6.283185307179)
+    if(6.283 < abs(Best_Score_HLS_d) < 6.283185307179)// Adjusts Test for edge case if 2pi or -2pi is best score's position
     {
     	Best_Score_HLS_d = 0;
     	Best_X_HLS_d = 0;
