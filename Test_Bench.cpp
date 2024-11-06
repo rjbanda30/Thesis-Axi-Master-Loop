@@ -5,7 +5,7 @@
 #include "FixedPoint.h" // Fixed-point definitions
 
 // Function to arrange vertices with fixed-point types
-void Arrange_Vertices(
+void arrangeVertices(
      fixed_t in_array[][3],
      int indices[],
      fixed_t Ordered_X[],
@@ -69,7 +69,7 @@ int main() {
     fixed_t Ordered_X[Num_Rows], Ordered_Y[Num_Rows], Ordered_Z[Num_Rows];
 
     // Arrange vertices based on indices
-    Arrange_Vertices(in_array, indices, Ordered_X, Ordered_Y, Ordered_Z, Num_Indices);
+    arrangeVertices(in_array, indices, Ordered_X, Ordered_Y, Ordered_Z, Num_Indices);
 
 
     fixed_t Best_Score_HLS = double_to_fixed(0.0);
@@ -99,7 +99,7 @@ int main() {
     double Best_X_SW_d = fixed_to_double(Best_X_SW);
     double Best_Y_SW_d = fixed_to_double(Best_Y_SW);
 
-    if(6.283 < abs(Best_Score_HLS_d) < 6.283185307179)// Adjusts Test for edge case if 2pi or -2pi is best score's position
+    if(6.283 < abs(Best_Score_HLS_d) < 6.283185307179)
     {
     	Best_Score_HLS_d = 0;
     	Best_X_HLS_d = 0;
@@ -127,7 +127,7 @@ int main() {
               << " | Best Y (SW): " << Best_Y_SW_d
               << " | " << (y_ok ? "PASS" : "FAIL") << std::endl;
 
-    
+    // Optionally, assert correctness
     if (!score_ok || !x_ok || !y_ok) {
         std::cerr << "Testbench Verification Failed!" << std::endl;
         return -1;
