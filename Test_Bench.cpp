@@ -127,7 +127,7 @@ int main() {
               << " | Best Y (SW): " << Best_Y_SW_d
               << " | " << (y_ok ? "PASS" : "FAIL") << std::endl;
 
-    // Optionally, assert correctness
+    
     if (!score_ok || !x_ok || !y_ok) {
         std::cerr << "Testbench Verification Failed!" << std::endl;
         return -1;
